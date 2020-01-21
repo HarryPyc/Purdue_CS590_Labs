@@ -172,3 +172,5 @@ bool Vect3d::operator==(const Vect3d & rhs) const
 													   else return false;
 }
 
+
+

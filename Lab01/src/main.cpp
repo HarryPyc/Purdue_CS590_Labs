@@ -43,6 +43,7 @@ GLfloat  sign=+1; //diretcion of rotation
 const GLfloat defaultIncrement=0.7f; //speed of rotation
 GLfloat  angleIncrement=defaultIncrement;
 int curve = 1; // decide which curve to draw
+int circleIndex = 0;
 
 vector <Vect3d> v;   //all the points will be stored here
 
@@ -55,6 +56,8 @@ GLint hWindow=800;
 bool tangentsFlag = false;
 bool pointsFlag = false;
 bool curveFlag = true;
+bool frenetFlag = false;
+bool circleFlag = false;
 
 /*********************************
 Some OpenGL-related functions DO NOT TOUCH
@@ -109,6 +112,16 @@ void DrawPoint(Vect3d a, Vect3d color) {
 	glEnd();
 }
 
+void DrawOsculatingCircle(Vect3d o, Vect3d r, Vect3d bnormal, Vect3d color) {
+	glColor3fv(color);
+	glBegin(GL_LINES);
+	for (int i = 0; i < 36; i++) {
+		glVertex3fv(o + r);
+		r.RotateAxis(10, bnormal);
+		glVertex3fv(o + r);
+	}
+	glEnd();
+}
 /**********************
 LAB related MODIFY
 ***********************/
@@ -165,6 +178,7 @@ void CreateCurve(vector <Vect3d> *a, int n, int c = 1)
 	default:
 		break;
 	}
+
 	
 }
 
@@ -236,6 +250,38 @@ void Lab01() {
 		tan *= 0.2;
 		DrawLine(v[i], v[i]+tan, red);
 	}
+	//draw the frenet frame
+	if (frenetFlag) {
+		for (unsigned int i = 0; i < v.size() - 2; i++) {
+			Vect3d tan, normal, bnormal;
+			tan = v[i + 1] - v[i];
+			normal = v[i + 2] - 2 * v[i + 1] + v[i];
+			bnormal = tan.Cross(tan, normal);
+			tan.Normalize();
+			normal.Normalize();
+			bnormal.Normalize();
+			tan *= 0.2;
+			normal *= 0.2;
+			bnormal *= 0.2;
+			DrawLine(v[i], v[i] + tan, red);
+			DrawLine(v[i], v[i] + normal, blue);
+			DrawLine(v[i], v[i] + bnormal, green);
+		}
+	}
+	if (circleFlag) {
+		int i = circleIndex;
+		Vect3d tan, normal, bnormal;
+		tan = v[i + 1] - v[i];
+		normal = v[i + 2] - 2 * v[i + 1] + v[i];
+		bnormal = tan.Cross(tan, normal);
+		float k = bnormal.Length()/pow(tan.Length(),3);
+		float R = 1 / k;
+		normal.Normalize();
+		Vect3d o, r;
+		r = -normal * R;
+		o = v[i] - r;
+		DrawOsculatingCircle(o, r, bnormal, red);
+	}
 }
 
 //the main rendering function
@@ -259,6 +305,8 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 	case 't': tangentsFlag = !tangentsFlag; break;
 	case 'p': pointsFlag = !pointsFlag; break;
 	case 'c': curveFlag = !curveFlag; break;
+	case 'f': frenetFlag = !frenetFlag; break;
+	case 'o': circleFlag = !circleFlag; break;
 	case 32: {
 		if (angleIncrement == 0) angleIncrement = defaultIncrement;
 		else angleIncrement = 0;
@@ -293,6 +341,16 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 	case '3': {
 		curve = 3;
 		InitArray(steps);
+		break;
+	}
+	case ',': {
+		if(circleIndex > 0)
+			circleIndex--;
+		break;
+	}
+	case '.': {
+		if (circleIndex < steps - 3)
+			circleIndex++;
 		break;
 	}
 	}
