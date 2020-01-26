@@ -257,6 +257,7 @@ void Lab01() {
 			tan = v[i + 1] - v[i];
 			normal = v[i + 2] - 2 * v[i + 1] + v[i];
 			bnormal = tan.Cross(tan, normal);
+			normal = bnormal.Cross(bnormal, tan);
 			tan.Normalize();
 			normal.Normalize();
 			bnormal.Normalize();
@@ -276,6 +277,7 @@ void Lab01() {
 		bnormal = tan.Cross(tan, normal);
 		float k = bnormal.Length()/pow(tan.Length(),3);
 		float R = 1 / k;
+		normal = bnormal.Cross(bnormal, tan);
 		normal.Normalize();
 		Vect3d o, r;
 		r = -normal * R;
