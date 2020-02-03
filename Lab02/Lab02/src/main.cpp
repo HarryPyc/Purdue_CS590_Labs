@@ -253,26 +253,26 @@ OpenGL code. Do not touch.
 ******************/
 void Idle(void)
 {
-  glClearColor(0.5f,0.5f,0.5f,1); //background color
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-  GLMessage("Lab 2 - CS 590CGS");
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluPerspective(40,(GLfloat)wWindow/(GLfloat)hWindow,0.01,100); //set the camera
-  glMatrixMode(GL_MODELVIEW); //set the scene
-  glLoadIdentity();
-  gluLookAt(0,10,10,0,0,0,0,1,0); //set where the camera is looking at and from. 
-  static GLfloat angle=0;
-  angle+=angleIncrement;
-  if (angle>=360.f) angle=0.f;
-  glRotatef(Sign*angle,0,1,0);
-  RenderObjects();
-  glutSwapBuffers();  
+	glutPostRedisplay();
 }
 
 void Display(void)
 {
-
+	glClearColor(0.5f, 0.5f, 0.5f, 1); //background color
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GLMessage("Lab 2 - CS 590CGS");
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(40, (GLfloat)wWindow / (GLfloat)hWindow, 0.01, 100); //set the camera
+	glMatrixMode(GL_MODELVIEW); //set the scene
+	glLoadIdentity();
+	gluLookAt(0, 10, 10, 0, 0, 0, 0, 1, 0); //set where the camera is looking at and from. 
+	static GLfloat angle = 0;
+	angle += angleIncrement;
+	if (angle >= 360.f) angle = 0.f;
+	glRotatef(Sign*angle, 0, 1, 0);
+	RenderObjects();
+	glutSwapBuffers();
 }
 
 void Mouse(int button, int state, int x, int y) {
