@@ -24,6 +24,8 @@
 
 //in house created libraries
 #include "trackball.h"
+#include "BezierCubic.h"
+
 
 #pragma warning(disable : 4996)
 #pragma comment(lib, "freeglut.lib")
@@ -34,15 +36,18 @@ using namespace std;
 TrackBallC trackball;
 bool mouseLeft, mouseMid, mouseRight;
 
-
+int bezierNum = 1;
 GLuint points=0;  //number of points to display the object
-int steps=20;     //# of subdivisions
+int steps=100;     //# of subdivisions
 bool needRedisplay=false;
 GLfloat  Sign=+1; //diretcion of rotation
 const GLfloat defaultIncrement=0.7f; //speed of rotation
 GLfloat  angleIncrement=defaultIncrement;
 
 vector <vec3> v;   //all the points will be stored here
+
+vector<BezierCubic> bezier;
+
 
 //window size
 GLint wWindow=1200;
@@ -51,9 +56,9 @@ GLint hWindow=800;
 //this defines what will be rendered
 //see Key() how is it controlled
 bool tangentsFlag = false;
-bool pointsFlag = false;
+bool pointsFlag = true;
 bool curveFlag = true;
-
+bool bezierFlag = true;
 /*********************************
 Some OpenGL-related functions DO NOT TOUCH
 **********************************/
@@ -74,6 +79,10 @@ void GLMessage(char *message)
 	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
+}
+//returns random number from <-1,1>
+inline float random11() {
+	return 2.f*rand() / (float)RAND_MAX - 1.f;
 }
 
 //called when a window is reshaped
@@ -120,27 +129,49 @@ inline vec3 P(GLfloat t)
 	return vec3(rad*(float)sin(rot*M_PI*t),height*t,rad*(float)cos(rot*M_PI*t)); //spiral with radius rad, height, and rotations rot
 }
 
+inline vec3 Curve(GLfloat t) {
+	return vec3(t, pow(t-0.5,3), t);
+}
+
 //This fills the <vector> *a with data. 
 void CreateCurve(vector <vec3> *a, int n)
 {
 	GLfloat step=1.f/n;
 	for (int i=0;i<n;i++)
 	{
-			a->push_back(P(i*step));
+			a->push_back(Curve(i*step));
 	}
 }
+void CreateBezierCubics() {
+
+	int n1 = steps/3, n2 = steps / 3, n3 = steps - n1 - n2;
+	BezierCubic b1(vec3(0, 0, 0), vec3(0, 1, 0), vec3(1, 1, 1), vec3(1, 0, 1), n1);
+	BezierCubic b2 = C1BezierCubic(&b1, vec3(0, -0.5, 0.5), vec3(0, -1, 0), n2);
+	BezierCubic b3 = C1BezierCubic(&b2, vec3(1, 0.5, 0.5), vec3(1, 0.5, 1), n3);
+	v.clear();
+	for (int i = 0; i < n1; i++) {
+		v.push_back(b1.b[i]);
+	}
+	for (int i = 0; i < n2; i++) {
+		v.push_back(b2.b[i]);
+	}
+	for (int i = 0; i < n3; i++) {
+		v.push_back(b3.b[i]);
+	}
+
+}
+
+
 
 //Call THIS for a new curve. It clears the old one first
 void InitArray(int n)
 {
 	v.clear();
-	CreateCurve(&v,n); 
+	CreateCurve(&v, n);
 }
 
-//returns random number from <-1,1>
-inline float random11() { 
-	return 2.f*rand() / (float)RAND_MAX - 1.f;
-}
+
+
 
 //randomizes an existing curve by adding random number to each coordinate
 void Randomize(vector <vec3> *a) {
@@ -198,7 +229,23 @@ void Lab01() {
 		tan *= 0.2;
 		DrawLine(v[i], v[i]+tan, red);
 	}
+	if (bezierFlag) {
+		for (int i = 0; i < bezier.size(); i++) {
+			for (unsigned int j = 0; j < bezier[i].b.size() - 1; j++) {
+				DrawLine(bezier[i].b[j], bezier[i].b[j + 1], yellow);
+				if(pointsFlag)
+					DrawPoint(bezier[i].b[j], green);
+			}
+			if (i < bezier.size() - 1)
+			{
+				//DrawLine(bezier[i].b[bezier[i].n - 1], bezier[i + 1].b[0], green);
+				if (pointsFlag)
+					DrawPoint(bezier[i ].b[bezier[i].n - 1], red);
+			}
+		}
+	}
 }
+
 
 //the main rendering function
 void RenderObjects()
@@ -220,30 +267,63 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 	case 27: exit(0); break;
 	case 't': tangentsFlag = !tangentsFlag; break;
 	case 'p': pointsFlag = !pointsFlag; break;
-	case 'c': curveFlag = !curveFlag; break;
+	case 'c': {
+		curveFlag = !curveFlag; 
+		
+		break;
+	}
 	case 32: {
-		if (angleIncrement == 0) angleIncrement = defaultIncrement;
-		else angleIncrement = 0;
+		BezierApproximation(&v, &bezier, bezierNum);
 		break;
 	}
 	case 's': {Sign = -Sign; break; }
 	case '-': {
 		steps--;
-		if (steps<1) steps = 1;
-		InitArray(steps);
+		if (steps< 20) steps = 20;		
+		cout << "[points]=[" << steps << "]" << endl;
+		CreateBezierCubics();
 		break;
 	}
 	case '+': {
 		steps++;
-		InitArray(steps);
+		cout << "[points]=[" << steps << "]" << endl;
+		CreateBezierCubics();
 		break;
 	}
+	case 'R':
 	case 'r': {
 		Randomize(&v);
 		break;
 	}
+	case 'B':
+		CreateBezierCubics();
+		break;
+	case 'b':
+	{
+
+		bezierFlag = !bezierFlag;
+		break;
 	}
-	cout << "[points]=[" << steps << "]" << endl;
+	case ',':
+	case '<':
+	{
+		bezierNum--;
+		if (bezierNum < 1)
+			bezierNum = 1;
+		cout << "BezierNum:" << bezierNum << endl;
+		break;
+	}
+	case '.':
+	case '>':
+	{
+		bezierNum++;
+
+		cout << "BezierNum:" << bezierNum << endl;
+		break;
+	}
+	}
+
+	
 	glutPostRedisplay();
 }
 
@@ -253,26 +333,26 @@ OpenGL code. Do not touch.
 ******************/
 void Idle(void)
 {
-  glClearColor(0.5f,0.5f,0.5f,1); //background color
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-  GLMessage("Lab 2 - CS 590CGS");
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluPerspective(40,(GLfloat)wWindow/(GLfloat)hWindow,0.01,100); //set the camera
-  glMatrixMode(GL_MODELVIEW); //set the scene
-  glLoadIdentity();
-  gluLookAt(0,10,10,0,0,0,0,1,0); //set where the camera is looking at and from. 
-  static GLfloat angle=0;
-  angle+=angleIncrement;
-  if (angle>=360.f) angle=0.f;
-  glRotatef(Sign*angle,0,1,0);
-  RenderObjects();
-  glutSwapBuffers();  
+	glutPostRedisplay();
 }
 
 void Display(void)
 {
-
+	glClearColor(0.5f, 0.5f, 0.5f, 1); //background color
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GLMessage("Lab 2 - CS 590CGS");
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(40, (GLfloat)wWindow / (GLfloat)hWindow, 0.01, 100); //set the camera
+	glMatrixMode(GL_MODELVIEW); //set the scene
+	glLoadIdentity();
+	gluLookAt(0, 10, 10, 0, 0, 0, 0, 1, 0); //set where the camera is looking at and from. 
+	static GLfloat angle = 0;
+	angle += angleIncrement;
+	if (angle >= 360.f) angle = 0.f;
+	glRotatef(Sign*angle, 0, 1, 0);
+	RenderObjects();
+	glutSwapBuffers();
 }
 
 void Mouse(int button, int state, int x, int y) {
@@ -327,6 +407,8 @@ int main(int argc, char **argv)
   // if (GLEW_OK != err){
   // fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
   //}
+  CreateBezierCubics();
+
   glutDisplayFunc(Display);
   glutIdleFunc(Idle);
   glutReshapeFunc(Reshape);
@@ -335,7 +417,7 @@ int main(int argc, char **argv)
   glutSpecialFunc(NULL);
   glutMouseFunc(Mouse);
   glutMotionFunc(MouseMotion);
-  InitArray(steps);
+
   glutMainLoop();
   return 0;        
 }
