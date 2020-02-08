@@ -39,8 +39,8 @@ vec3 BezierCubic::GetBezier(float t)
 
 vec3 BezierCubic::GetD1Bezier(float t) {
 	float B0_1 = -3 * (1 - t)*(1 - t);
-	float B1_1 = -2 * 3 * t*(1 - t) + 3 * (1 - t)*(1 - t);
-	float B2_1 = 3 * t*t + 2 * 3 * t*(1 - t);
+	float B1_1 = -6 * t*(1 - t) + 3 * (1 - t)*(1 - t);
+	float B2_1 = -3 * t*t + 6 * t*(1 - t);
 	float B3_1 = 3 * t*t;
 	return p0 * B0_1 + p1 * B1_1 + p2 * B2_1 + p3 * B3_1;
 }
@@ -48,7 +48,7 @@ vec3 BezierCubic::GetD1Bezier(float t) {
 vec3 BezierCubic::GetD2Bezier(float t) {
 	float B0_2 = -6 * (t - 1);
 	float B1_2 = 18 * t - 12;
-	float B2_2 = 6 - 6 * t;
+	float B2_2 = 6 - 18 * t;
 	float B3_2 = 6 * t;
 	return p0 * B0_2 + p1 * B1_2 + p2 * B2_2 + p3 * B3_2;
 }
@@ -70,6 +70,14 @@ BezierCubic G1BezierCubic(BezierCubic *b1, vec3 p2, vec3 p3, int n, float k) {
 	vec3 p0 = b1->p3;
 	vec3 p1 = p0 + (p0 - b1->p2) * k;
 	return BezierCubic(p0, p1, p2, p3, n);
+}
+
+BezierCubic Line(vec3 start, vec3 end, int s)
+{
+	BezierCubic b(start, start, end, end, 2);
+	b.start = s;
+	b.end = s + 1;
+	return b;
 }
 
 
@@ -160,9 +168,14 @@ void NewtonIteration(vector<vec3> *points, vector<float> *u, BezierCubic *b) {
 }
 void FitCurve(vector<vec3> *points, vector<BezierCubic> *beziers, vector<Error> *errors, int start) {
 	const int N = points->size();
-	cout << "segments size =" << N << endl;
+	cout << "segments size =" << N << endl;	
 	vec3 startPoint = points->at(0);
 	vec3 endPoint = points->at(N - 1);
+	if (N == 2) {
+		beziers->push_back(Line(startPoint, endPoint, start));
+		return;
+	}
+
 	int window = N / 10 + 2;
 	//get normalized vector p0_p1(t1) and p3_p2(t2)
 	vec3 t1 = vec3(0.0), t2 = vec3(0.0);
@@ -170,8 +183,7 @@ void FitCurve(vector<vec3> *points, vector<BezierCubic> *beziers, vector<Error> 
 		t1 += points->at(i) - startPoint;
 		t2 += points->at(N - i - 1) - endPoint;
 	}
-	/*vec3 t1 = points->at(1) - startPoint;
-	vec3 t2 = points->at(N - 2) - endPoint;*/
+
 	t1 = normalize(t1);
 	t2 = normalize(t2);
 	vector<float> u;
@@ -184,8 +196,9 @@ void FitCurve(vector<vec3> *points, vector<BezierCubic> *beziers, vector<Error> 
 		bezier = FitCubic(points, t1, t2, &u);
 	}
 	Error err = GetError(points, &bezier, &u);
+	//cout << err.error << endl;
 	bezier.start = start;
-	bezier.end = start + N;
+	bezier.end = start + N - 1;
 	err.index += start;
 	errors->push_back(err);
 	beziers->push_back(bezier);
@@ -196,37 +209,64 @@ bool compError(const Error &a, const Error &b) {
 bool compBezier(const BezierCubic &a, const BezierCubic &b) {
 	return a.start < b.start;
 }
-void BezierApproximation(vector<vec3> *points, vector<BezierCubic> *beziers, int num)
+bool hasApproximated = false;
+int lastNum = 0;
+void BezierApproximation(vector<vec3> *points, vector<BezierCubic> *beziers, int *num)
 {
+	if (hasApproximated && *num > lastNum)
+	{
+		*num = lastNum;
+		return;
+	}
+	lastNum = *num;
+	int count = *num;
 	const int N = points->size();
 
 	vector<Error> errors;
 	beziers->clear();
 	FitCurve(points, beziers, &errors, 0);
+
 	
-	while (num-- > 1) {
+	while (count-- > 1) {
 		int n = beziers->size();
 		sort(errors.begin(), errors.end(), compError);
 		Error maxError = errors[0];
-		cout << "Max Error locates in" << maxError.index << endl;
-		errors.clear();
+		cout << "Max Error locates in" << maxError.index <<' '<<maxError.error<< endl;
+		errors.erase(errors.begin());
 		for (int i = 0; i < n; i++) {
-			if (beziers->at(i).start < maxError.index &&
-				beziers->at(i).end > maxError.index) {
+			if (beziers->at(i).start <= maxError.index &&
+				beziers->at(i).end >= maxError.index) {
 				vector<vec3> p1, p2;
-				p1.assign(points->begin() + beziers->at(i).start, points->begin() + maxError.index);
-				p2.assign(points->begin() + maxError.index, points->begin() + beziers->at(i).end);
+				int breakIndex = maxError.index;
+				//assign doesn't include second argument
+				p1.assign(points->begin() + beziers->at(i).start, points->begin() + breakIndex + 1);
+				p2.assign(points->begin() + breakIndex, points->begin() + beziers->at(i).end + 1);
 
-				FitCurve(&p1, beziers, &errors, beziers->at(i).start);
-				FitCurve(&p2, beziers, &errors, maxError.index);
+	
+				FitCurve(&p1, beziers, &errors, beziers->at(i).start);		
+				FitCurve(&p2, beziers, &errors, breakIndex);
 				beziers->erase(beziers->begin() + i);
-
+				break;
 			}
 		}
 	}
+
+	float sum_error = 0.f;
+	for (int i = 0; i < errors.size(); i++) {
+		sum_error += errors[i].error;
+	}
+	cout << "Total Error =" << sum_error << endl;
+	if (sum_error < MAX_ERROR)
+		hasApproximated = true;
+	else
+		hasApproximated = false;
 	sort(beziers->begin(), beziers->end(), compBezier);
-	for (int i = 0; i < beziers->size(); i++)
-		cout << "Start Index =" << beziers->at(i).start << endl;
+	for (int i = 0; i < beziers->size(); i++) {
+		cout << "Start and End Index : " << beziers->at(i).start
+			<< ' ' << beziers->at(i).end << endl
+			<< "length = " << beziers->at(i).n << endl;
+	}
+
 	
 }
 

@@ -5,7 +5,7 @@
 #include "glm\gtx\norm.hpp"
 #include <vector>
 #include <algorithm>
-#define MAX_ERROR 1.0f
+#define MAX_ERROR 0.0005f
 using namespace glm;
 using namespace std;
 
@@ -33,14 +33,15 @@ public:
 	void InitBezierCubic();
 };
 
-const int max_iteration = 10;
+const int max_iteration = 3;
 struct Error {
-	int index;
-	float error;
+	int index = 0;
+	float error = 0.f;
 };
 
 
 BezierCubic C1BezierCubic(BezierCubic *b1, vec3 p2, vec3 p3, int n);
 BezierCubic G1BezierCubic(BezierCubic *b1, vec3 p2, vec3 p3, int n, float k);
+BezierCubic Line(vec3 start, vec3 end, int s);
 
-void BezierApproximation(vector<vec3> *points, vector<BezierCubic> *beziers, int num);
+void BezierApproximation(vector<vec3> *points, vector<BezierCubic> *beziers, int *num);

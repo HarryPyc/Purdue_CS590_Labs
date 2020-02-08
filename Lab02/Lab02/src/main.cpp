@@ -36,14 +36,16 @@ using namespace std;
 TrackBallC trackball;
 bool mouseLeft, mouseMid, mouseRight;
 
+extern bool hasApproximated;
 int bezierNum = 1;
 GLuint points=0;  //number of points to display the object
-int steps=100;     //# of subdivisions
+int steps=101;     //# of subdivisions
 bool needRedisplay=false;
 GLfloat  Sign=+1; //diretcion of rotation
 const GLfloat defaultIncrement=0.7f; //speed of rotation
 GLfloat  angleIncrement=defaultIncrement;
 
+BezierCubic *b1, *b2, *b3;
 vector <vec3> v;   //all the points will be stored here
 
 vector<BezierCubic> bezier;
@@ -142,24 +144,6 @@ void CreateCurve(vector <vec3> *a, int n)
 			a->push_back(Curve(i*step));
 	}
 }
-void CreateBezierCubics() {
-
-	int n1 = steps/3, n2 = steps / 3, n3 = steps - n1 - n2;
-	BezierCubic b1(vec3(0, 0, 0), vec3(0, 1, 0), vec3(1, 1, 1), vec3(1, 0, 1), n1);
-	BezierCubic b2 = C1BezierCubic(&b1, vec3(0, -0.5, 0.5), vec3(0, -1, 0), n2);
-	BezierCubic b3 = C1BezierCubic(&b2, vec3(1, 0.5, 0.5), vec3(1, 0.5, 1), n3);
-	v.clear();
-	for (int i = 0; i < n1; i++) {
-		v.push_back(b1.b[i]);
-	}
-	for (int i = 0; i < n2; i++) {
-		v.push_back(b2.b[i]);
-	}
-	for (int i = 0; i < n3; i++) {
-		v.push_back(b3.b[i]);
-	}
-
-}
 
 
 
@@ -167,8 +151,38 @@ void CreateBezierCubics() {
 void InitArray(int n)
 {
 	v.clear();
-	CreateCurve(&v, n);
+	int n1 = steps / 3, n2 = steps / 3, n3 = steps - n1 - n2;
+	b1->n = n1;
+	b2->n = n2;
+	b3->n = n3;
+	b1->InitBezierCubic();
+	b2->InitBezierCubic();
+	b3->InitBezierCubic();
+	for (int i = 0; i < n1; i++) {
+		v.push_back(b1->b[i]);
+	}
+	for (int i = 0; i < n2; i++) {
+		v.push_back(b2->b[i]);
+	}
+	for (int i = 0; i < n3; i++) {
+		v.push_back(b3->b[i]);
+	}
 }
+
+void CreateBezierCubics() {
+
+	int n1 = steps/3, n2 = steps / 3, n3 = steps - n1 - n2;
+	b1 = new BezierCubic(vec3(random11(), random11(), random11()), vec3(random11(), random11(), random11()), 
+		vec3(random11(), random11(), random11()), vec3(random11(), random11(), random11()), n1);
+	 b2 = new BezierCubic();
+	 b3 = new BezierCubic();
+	*b2 = C1BezierCubic(b1, vec3(random11(), random11(), random11()), vec3(random11(), random11(), random11()), n2);
+	*b3 = C1BezierCubic(b2, vec3(random11(), random11(), random11()), vec3(random11(), random11(), random11()), n3);
+	InitArray(steps);
+}
+
+
+
 
 
 
@@ -231,7 +245,7 @@ void Lab01() {
 	}
 	if (bezierFlag) {
 		for (int i = 0; i < bezier.size(); i++) {
-			for (unsigned int j = 0; j < bezier[i].b.size() - 1; j++) {
+			for (unsigned int j = 0; j < bezier[i].b.size() - 1; j++) {				
 				DrawLine(bezier[i].b[j], bezier[i].b[j + 1], yellow);
 				if(pointsFlag)
 					DrawPoint(bezier[i].b[j], green);
@@ -240,7 +254,7 @@ void Lab01() {
 			{
 				//DrawLine(bezier[i].b[bezier[i].n - 1], bezier[i + 1].b[0], green);
 				if (pointsFlag)
-					DrawPoint(bezier[i ].b[bezier[i].n - 1], red);
+					DrawPoint(bezier[i].b[bezier[i].n - 1], red);
 			}
 		}
 	}
@@ -273,7 +287,7 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 		break;
 	}
 	case 32: {
-		BezierApproximation(&v, &bezier, bezierNum);
+		BezierApproximation(&v, &bezier, &bezierNum);
 		break;
 	}
 	case 's': {Sign = -Sign; break; }
@@ -281,13 +295,13 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 		steps--;
 		if (steps< 20) steps = 20;		
 		cout << "[points]=[" << steps << "]" << endl;
-		CreateBezierCubics();
+		InitArray(steps);
 		break;
 	}
 	case '+': {
 		steps++;
 		cout << "[points]=[" << steps << "]" << endl;
-		CreateBezierCubics();
+		InitArray(steps);
 		break;
 	}
 	case 'R':
@@ -296,6 +310,7 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 		break;
 	}
 	case 'B':
+		bezierNum = 1;
 		CreateBezierCubics();
 		break;
 	case 'b':
@@ -310,6 +325,7 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 		bezierNum--;
 		if (bezierNum < 1)
 			bezierNum = 1;
+		BezierApproximation(&v, &bezier, &bezierNum);
 		cout << "BezierNum:" << bezierNum << endl;
 		break;
 	}
@@ -317,6 +333,7 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 	case '>':
 	{
 		bezierNum++;
+		BezierApproximation(&v, &bezier, &bezierNum);
 
 		cout << "BezierNum:" << bezierNum << endl;
 		break;
