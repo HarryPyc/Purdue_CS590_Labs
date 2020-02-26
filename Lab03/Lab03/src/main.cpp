@@ -21,10 +21,12 @@
 #include <vector>			//Standard template library class
 #include <GL/freeglut.h>
 #include "glm\glm.hpp"
-
+#include "Tree.h"
 //in house created libraries
 #include "trackball.h"
-
+#include "CatmullClark.h"
+#define Orange vec3(1.0,0.6,0.0)
+#define Green vec3(0,1,0)
 #pragma warning(disable : 4996)
 #pragma comment(lib, "freeglut.lib")
 using namespace glm;
@@ -42,8 +44,9 @@ GLfloat  Sign=+1; //diretcion of rotation
 const GLfloat defaultIncrement=0.7f; //speed of rotation
 GLfloat  angleIncrement=defaultIncrement;
 
-vector <vec3> v;   //all the points will be stored here
 
+vector<vec3> v;
+Surface surf;
 //window size
 GLint wWindow=1200;
 GLint hWindow=800;
@@ -107,6 +110,21 @@ void DrawPoint(vec3 a, vec3 color) {
 	glEnd();
 }
 
+void DrawSurf(Surface surf) {
+	for (int i = 0; i < surf.v.size() - 1; i++) {
+		if (surf.v[i].size() > 1) {
+			for (int j = 0; j < surf.v[i].size(); j++) {
+				if (j < surf.v[i].size() - 1)
+					DrawLine(surf.v[i][j], surf.v[i][j + 1], Orange);
+				else
+					DrawLine(surf.v[i][0], surf.v[i][j], Orange);
+				if (surf.v[i + 1].size() > 1)
+					DrawLine(surf.v[i][j], surf.v[i + 1][j], Green);
+			}
+		}
+	}	
+}
+
 /**********************
 LAB related MODIFY
 ***********************/
@@ -120,22 +138,8 @@ inline vec3 P(GLfloat t)
 	return vec3(rad*(float)sin(rot*M_PI*t),height*t,rad*(float)cos(rot*M_PI*t)); //spiral with radius rad, height, and rotations rot
 }
 
-//This fills the <vector> *a with data. 
-void CreateCurve(vector <vec3> *a, int n)
-{
-	GLfloat step=1.f/n;
-	for (int i=0;i<n;i++)
-	{
-			a->push_back(P(i*step));
-	}
-}
 
-//Call THIS for a new curve. It clears the old one first
-void InitArray(int n)
-{
-	v.clear();
-	CreateCurve(&v,n); 
-}
+
 
 //returns random number from <-1,1>
 inline float random11() { 
@@ -180,7 +184,8 @@ void Lab01() {
 	//draw the curve
 	if (curveFlag)
 		for (unsigned int i = 0; i < v.size() - 1; i++) {
-		DrawLine(v[i], v[i + 1], almostBlack);
+			if(v[i]!=BREAK && v[i + 1]!=BREAK)
+				DrawLine(v[i], v[i + 1], almostBlack);
 	}
 
 	//draw the points
@@ -189,15 +194,16 @@ void Lab01() {
 		DrawPoint(v[i], blue);
 	}
 
-//draw the tangents
-	if (tangentsFlag)
-	for (unsigned int i = 0; i < v.size() - 1; i++) {
-		vec3 tan;
-		tan = v[i + 1] - v[i]; //too simple - could be better from the point after AND before
-		tan = normalize(tan); 
-		tan *= 0.2;
-		DrawLine(v[i], v[i]+tan, red);
-	}
+	DrawSurf(surf);
+////draw the tangents
+//	if (tangentsFlag)
+//	for (unsigned int i = 0; i < v.size() - 1; i++) {
+//		vec3 tan;
+//		tan = v[i + 1] - v[i]; //too simple - could be better from the point after AND before
+//		tan = normalize(tan); 
+//		tan *= 0.2;
+//		DrawLine(v[i], v[i]+tan, red);
+//	}
 }
 
 //the main rendering function
@@ -229,13 +235,12 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 	case 's': {Sign = -Sign; break; }
 	case '-': {
 		steps--;
-		if (steps<1) steps = 1;
-		InitArray(steps);
+
 		break;
 	}
 	case '+': {
 		steps++;
-		InitArray(steps);
+
 		break;
 	}
 	case 'r': {
@@ -327,6 +332,10 @@ int main(int argc, char **argv)
   // if (GLEW_OK != err){
   // fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
   //}
+  Tree tree(30, 0.3);
+  v = tree.v;
+  surf.GenerateSurfaceFromSkeleton(tree.v);
+
   glutDisplayFunc(Display);
   glutIdleFunc(Idle);
   glutReshapeFunc(Reshape);
@@ -335,7 +344,8 @@ int main(int argc, char **argv)
   glutSpecialFunc(NULL);
   glutMouseFunc(Mouse);
   glutMotionFunc(MouseMotion);
-  InitArray(steps);
+
   glutMainLoop();
+	
   return 0;        
 }
