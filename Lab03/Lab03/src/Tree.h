@@ -16,7 +16,7 @@ public:
 	~Tree();
 	vector<vec3> v;
 
-	const char* rule = "F-[[f]+f]+F[+Ff]-f";
+	const char* rule = "FF-f";//F-[[f]+f]+F[+Ff]-f
 	float angle;
 	float width;
 	void DrawTree(float dir);

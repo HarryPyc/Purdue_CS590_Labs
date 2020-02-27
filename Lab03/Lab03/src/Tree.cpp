@@ -4,7 +4,7 @@
 
 Tree::Tree(float angle, float width)
 {
-	v.push_back(vec3(0.5, 0, 0));
+	v.push_back(vec3(0, 0, 0));
 	this->angle = angle;
 	this->width = width;
 	DrawTree(0);
@@ -47,6 +47,7 @@ void Tree::DrawTree(float dir) {
 	}
 	v.push_back(BREAK);
 }
+
 
 
 

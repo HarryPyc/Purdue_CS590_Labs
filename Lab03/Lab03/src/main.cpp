@@ -110,19 +110,13 @@ void DrawPoint(vec3 a, vec3 color) {
 	glEnd();
 }
 
-void DrawSurf(Surface surf) {
-	for (int i = 0; i < surf.v.size() - 1; i++) {
-		if (surf.v[i].size() > 1) {
-			for (int j = 0; j < surf.v[i].size(); j++) {
-				if (j < surf.v[i].size() - 1)
-					DrawLine(surf.v[i][j], surf.v[i][j + 1], Orange);
-				else
-					DrawLine(surf.v[i][0], surf.v[i][j], Orange);
-				if (surf.v[i + 1].size() > 1)
-					DrawLine(surf.v[i][j], surf.v[i + 1][j], Green);
-			}
-		}
-	}	
+void DrawSurf(Surface *surf) {
+
+	vector<Edge>::iterator it = surf->edges.begin();
+	for (it; it != surf->edges.end(); it++) {
+		DrawLine(it->a->p, it->b->p, Orange);
+		//DrawPoint(it->a->p, Orange);
+	}
 }
 
 /**********************
@@ -179,7 +173,7 @@ void Lab01() {
 	vec3 origin(0, 0, 0);
 	vec3 red(1, 0, 0), green(0, 1, 0), blue(0, 0, 1), almostBlack(0.1f, 0.1f, 0.1f), yellow(1, 1, 0);
 
-
+	DrawSurf(&surf);
 	CoordSyst();
 	//draw the curve
 	if (curveFlag)
@@ -194,7 +188,7 @@ void Lab01() {
 		DrawPoint(v[i], blue);
 	}
 
-	DrawSurf(surf);
+
 ////draw the tangents
 //	if (tangentsFlag)
 //	for (unsigned int i = 0; i < v.size() - 1; i++) {
@@ -332,7 +326,7 @@ int main(int argc, char **argv)
   // if (GLEW_OK != err){
   // fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
   //}
-  Tree tree(30, 0.3);
+  Tree tree(30, 1.0);
   v = tree.v;
   surf.GenerateSurfaceFromSkeleton(tree.v);
 
