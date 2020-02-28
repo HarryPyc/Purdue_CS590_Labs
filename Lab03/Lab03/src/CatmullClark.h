@@ -14,6 +14,7 @@ public:
 	vector<Face*> faces;//neighbor faces
 	vector<Edge*> edges;//neighbor edges
 	Point* newPoint;    
+
 	void GetNewPoint();
 
 };
@@ -23,9 +24,10 @@ public:
 	Point *a, *b; //two end points
 	vector<Face*> faces;//neighbor faces
 	Point *newEdgePoint;
+	vec3 midPoint;
 	//new Edges, 'n' means new
 	Edge *nea, *neb;
-	vec3 GetMidPoint();
+
 	void GetNewEdgePoint();
 	void GenerateNewSurface(); //Generate two edges for each original edge
 };

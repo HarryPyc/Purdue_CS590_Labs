@@ -5,7 +5,7 @@ Edge::Edge(Point *a, Point *b) {
 	this->b = b;
 	a->edges.push_back(this);
 	b->edges.push_back(this);
-	
+	midPoint = (a->p + b->p) / 2.f;
 }
 
 void Edge::GetNewEdgePoint() {
@@ -18,9 +18,7 @@ void Edge::GenerateNewSurface()
 	nea = new Edge(a->newPoint, newEdgePoint);
 	neb = new Edge(b->newPoint, newEdgePoint);
 }
-vec3 Edge::GetMidPoint() {
-	return (a->p + b->p) / 2.f;
-}
+
 
 Face::Face(Edge *e0, Edge *e1, Edge *e2, Edge *e3){
 	this->e0 = e0;
@@ -69,7 +67,7 @@ void Point::GetNewPoint()
 	}
 	for (int i = 0; i < n; i++) {
 		F += faces[i]->newFacePoint->p;
-		R += edges[i]->GetMidPoint();
+		R += edges[i]->midPoint;
 	}
 	float N = n;
 	vec3 result = (F/N + 2.f * R/N + (N - 3.f)*p) / N;
