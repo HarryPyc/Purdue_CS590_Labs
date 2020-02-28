@@ -35,9 +35,8 @@ void Tree::DrawTree(float dir) {
 			currentDir -= angle;
 		else if (rule[i] == '[') {
 			i++;
-			vec3 temp = v.back();
+			v.push_back(ENTER);
 			DrawTree(currentDir);
-			v.push_back(temp);
 		}
 		else if (rule[i] == ']') {
 			//i++;

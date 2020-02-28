@@ -44,9 +44,10 @@ GLfloat  Sign=+1; //diretcion of rotation
 const GLfloat defaultIncrement=0.7f; //speed of rotation
 GLfloat  angleIncrement=defaultIncrement;
 
-
+int times = 0;
+float angle = 30.f, width = 1.0f;
 vector<vec3> v;
-Surface surf;
+Surface *surf;
 //window size
 GLint wWindow=1200;
 GLint hWindow=800;
@@ -112,9 +113,9 @@ void DrawPoint(vec3 a, vec3 color) {
 
 void DrawSurf(Surface *surf) {
 
-	vector<Edge>::iterator it = surf->edges.begin();
+	vector<Edge*>::iterator it = surf->edges.begin();
 	for (it; it != surf->edges.end(); it++) {
-		DrawLine(it->a->p, it->b->p, Orange);
+		DrawLine((*it)->a->p, (*it)->b->p, Orange);
 		//DrawPoint(it->a->p, Orange);
 	}
 }
@@ -133,7 +134,10 @@ inline vec3 P(GLfloat t)
 }
 
 
-
+void InitSurf() {
+	Tree *tree = new Tree(angle, width);
+	surf = new Surface(tree->v);
+}
 
 //returns random number from <-1,1>
 inline float random11() { 
@@ -173,31 +177,8 @@ void Lab01() {
 	vec3 origin(0, 0, 0);
 	vec3 red(1, 0, 0), green(0, 1, 0), blue(0, 0, 1), almostBlack(0.1f, 0.1f, 0.1f), yellow(1, 1, 0);
 
-	DrawSurf(&surf);
+	DrawSurf(surf);
 	CoordSyst();
-	//draw the curve
-	if (curveFlag)
-		for (unsigned int i = 0; i < v.size() - 1; i++) {
-			if(v[i]!=BREAK && v[i + 1]!=BREAK)
-				DrawLine(v[i], v[i + 1], almostBlack);
-	}
-
-	//draw the points
-	if (pointsFlag)
-		for (unsigned int i = 0; i < v.size() - 1; i++) {
-		DrawPoint(v[i], blue);
-	}
-
-
-////draw the tangents
-//	if (tangentsFlag)
-//	for (unsigned int i = 0; i < v.size() - 1; i++) {
-//		vec3 tan;
-//		tan = v[i + 1] - v[i]; //too simple - could be better from the point after AND before
-//		tan = normalize(tan); 
-//		tan *= 0.2;
-//		DrawLine(v[i], v[i]+tan, red);
-//	}
 }
 
 //the main rendering function
@@ -221,11 +202,6 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 	case 't': tangentsFlag = !tangentsFlag; break;
 	case 'p': pointsFlag = !pointsFlag; break;
 	case 'c': curveFlag = !curveFlag; break;
-	case 32: {
-		if (angleIncrement == 0) angleIncrement = defaultIncrement;
-		else angleIncrement = 0;
-		break;
-	}
 	case 's': {Sign = -Sign; break; }
 	case '-': {
 		steps--;
@@ -241,8 +217,11 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 		Randomize(&v);
 		break;
 	}
+	case 32: {
+		surf = surf->CatmullClarkSubdivision();
+		break;
 	}
-	cout << "[points]=[" << steps << "]" << endl;
+	}
 	glutPostRedisplay();
 }
 
@@ -326,9 +305,10 @@ int main(int argc, char **argv)
   // if (GLEW_OK != err){
   // fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
   //}
-  Tree tree(30, 1.0);
+ /* Tree tree(30, 1.0);
   v = tree.v;
-  surf.GenerateSurfaceFromSkeleton(tree.v);
+  surf = new Surface(tree.v);*/
+  InitSurf();
 
   glutDisplayFunc(Display);
   glutIdleFunc(Idle);

@@ -7,7 +7,9 @@
 using namespace glm;
 #include <vector>
 using namespace std;
+
 const vec3 BREAK(999);
+const vec3 ENTER(99.f);
 
 class Tree
 {
@@ -16,7 +18,7 @@ public:
 	~Tree();
 	vector<vec3> v;
 
-	const char* rule = "FF-f";//F-[[f]+f]+F[+Ff]-f
+	const char* rule = "f+f-f";//F-[[f]+f]+F[+Ff]-f
 	float angle;
 	float width;
 	void DrawTree(float dir);

@@ -6,27 +6,37 @@ class Face;
 
 class Point {
 public:
-	Point();
 	Point(vec3 p);
 	vec3 p;
-	vector<Face> faces;
-	vector<Edge> edges;
-	vec3 GetNewVertexPoint();
+	vector<Face*> faces;
+	vector<Edge*> edges;
+	Point* newPoint;
+	void GetNewPoint();
+
 };
 class Edge {
 public:
 	Edge(Point *a, Point *b);
-	Edge();
 	Point *a, *b;
-	vector<Face> faces;
-	vec3 GetNewEdgePoit(Face f1, Face f2);
+	vector<Face*> faces;
+	Point *newEdgePoint;
+	//new Edges
+	Edge *nea, *neb;
 	vec3 GetMidPoint();
+	void GetNewEdgePoint();
+	void GenerateNewSurface();
 };
 class Face {
 public:
 	Edge *e0, *e1, *e2, *e3;
 	Face(Edge *e0, Edge *e1, Edge *e2, Edge *e3);
-	vec3 GetNewFacePoint();
+	Point* newFacePoint;
+	//new Edges
+	Edge *ne0, *ne1, *ne2, *ne3;
+	//new Faces
+	Face *nf0, *nf1, *nf2, *nf3;
+	void GetNewFacePoint();
+	void GenerateNewSurface();
 };
 
 
@@ -34,13 +44,14 @@ class Surface
 {
 public:
 	//vector<vector<vec3>> v;
-	vector<Point> points;
-	vector<Face> faces;
-	vector<Edge> edges;
+	vector<Point*> points;
+	vector<Face*> faces;
+	vector<Edge*> edges;
 	Surface();
+	Surface(vector<vec3> v);
 	~Surface();
 	void GenerateSurfaceFromSkeleton(vector<vec3> v);
-	Surface CatmullClarkSubdivision();
+	Surface* CatmullClarkSubdivision();
 
 };
 
