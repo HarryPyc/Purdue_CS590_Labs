@@ -20,8 +20,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\math\triangle.cpp" />
     <ClCompile Include="src\math\vect3d.cpp" />
     <ClCompile Include="src\CatmullClark.cpp" />
+    <ClCompile Include="src\objGen.cpp" />
     <ClCompile Include="src\Tree.cpp" />
   </ItemGroup>
   <ItemGroup>

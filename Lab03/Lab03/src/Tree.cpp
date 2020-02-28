@@ -4,10 +4,11 @@
 
 Tree::Tree(float angle, float width)
 {
-	v.push_back(vec3(0, 0, 0));
+	v.clear();
+	v.push_back(START);
 	this->angle = angle;
 	this->width = width;
-	DrawTree(0);
+	DrawTree(0, START);
 }
 
 
@@ -20,14 +21,17 @@ vec3 Tree::GetNewVertex(vec3 v, float dir) {
 	d = normalize(d)*width;
 	return v + d;
 }
-int i = 0;
-void Tree::DrawTree(float dir) {
+
+
+void Tree::DrawTree(float dir, vec3 lastPoint) {
 
 	float currentDir = dir;	
+	vec3 p = lastPoint;
 	for (i; i < strlen(rule); i++) {
 		cout << rule[i];
 		if (rule[i] == 'F' || rule[i] == 'f') {
-			v.push_back(GetNewVertex(v.back(), currentDir));
+			p = GetNewVertex(p, currentDir);
+			v.push_back(p);
 		}
 		else if (rule[i] == '+')
 			currentDir += angle;
@@ -36,7 +40,7 @@ void Tree::DrawTree(float dir) {
 		else if (rule[i] == '[') {
 			i++;
 			v.push_back(ENTER);
-			DrawTree(currentDir);
+			DrawTree(currentDir, p);
 		}
 		else if (rule[i] == ']') {
 			//i++;

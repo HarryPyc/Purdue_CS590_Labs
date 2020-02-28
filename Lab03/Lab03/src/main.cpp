@@ -1,14 +1,11 @@
 /*********************************/
 /* CS 590CGS Lab framework        */
-/* (C) Bedrich Benes 2020        */
+/* (C) Harry Pan 2020            */
 /* bbenes ~ at ~ purdue.edu      */
-/* Press +,- to add/remove points*/
-/*       r to randomize          */
-/*       s to change rotation    */
-/*       c to render curve       */
-/*       t to render tangents    */
-/*       p to render points      */
-/*       s to change rotation    */
+/* Press +,- to subdivide surface*/
+/*       <,> to adjust width     */
+/*       , and . to adjust angle */
+/*       ctrl+s to save obj      */
 /*********************************/
 
 #include <stdio.h>
@@ -25,6 +22,8 @@
 //in house created libraries
 #include "trackball.h"
 #include "CatmullClark.h"
+#include "objGen.h"
+#include "math\triangle.h"
 #define Orange vec3(1.0,0.6,0.0)
 #define Green vec3(0,1,0)
 #pragma warning(disable : 4996)
@@ -44,8 +43,9 @@ GLfloat  Sign=+1; //diretcion of rotation
 const GLfloat defaultIncrement=0.7f; //speed of rotation
 GLfloat  angleIncrement=defaultIncrement;
 
-int times = 0;
-float angle = 30.f, width = 1.0f;
+int subDivisiontTimes = 0;
+int subDivisionCounter = 0;
+float angle = 60.f, width = 0.5f;
 vector<vec3> v;
 Surface *surf;
 //window size
@@ -135,10 +135,36 @@ inline vec3 P(GLfloat t)
 
 
 void InitSurf() {
+	if (angle <= 45.f)
+		angle = 50.f;
+	if (angle >= 90.f)
+		angle = 90.f;
 	Tree *tree = new Tree(angle, width);
 	surf = new Surface(tree->v);
+	subDivisionCounter = 0;
 }
 
+void SubDivision() {
+	if (subDivisionCounter > subDivisiontTimes)
+		InitSurf();
+	while (subDivisionCounter < subDivisiontTimes) {
+		surf = surf->CatmullClarkSubdivision();
+		subDivisionCounter++;
+	}
+}
+
+void SaveMesh() {
+	vector<Face*>::iterator i = surf->faces.begin();
+	vector<TriangleC> tri;
+	for (i; i < surf->faces.end(); i++) {
+		TriangleC t;
+		t.Set((*i)->e0->a->p, (*i)->e0->b->p, (*i)->e2->b->p);
+		tri.push_back(t);
+		t.Set((*i)->e2->a->p, (*i)->e0->a->p, (*i)->e2->b->p);
+		tri.push_back(t);
+	}
+	SaveOBJ(&tri, "TreeMesh.obj");
+}
 //returns random number from <-1,1>
 inline float random11() { 
 	return 2.f*rand() / (float)RAND_MAX - 1.f;
@@ -202,17 +228,9 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 	case 't': tangentsFlag = !tangentsFlag; break;
 	case 'p': pointsFlag = !pointsFlag; break;
 	case 'c': curveFlag = !curveFlag; break;
-	case 's': {Sign = -Sign; break; }
-	case '-': {
-		steps--;
+	case 's': 
+	{Sign = -Sign; break; }
 
-		break;
-	}
-	case '+': {
-		steps++;
-
-		break;
-	}
 	case 'r': {
 		Randomize(&v);
 		break;
@@ -221,7 +239,40 @@ void Kbd(unsigned char a, int x, int y)//keyboard callback
 		surf = surf->CatmullClarkSubdivision();
 		break;
 	}
+	case '<': {
+		width -= 0.1f;
+		InitSurf();
+		break;
 	}
+	case '>': {
+		width += 0.1f;
+		InitSurf();
+		break;
+	}
+	case ',':
+		angle -= 5.f;
+		InitSurf();
+		break;
+	case '.':
+		angle += 5.f;
+		InitSurf();
+		break;
+	case '-':
+		subDivisiontTimes--;
+		if (subDivisiontTimes < 0)
+			subDivisiontTimes = 0;
+		SubDivision();
+		break;
+	case '+':
+		subDivisiontTimes++;
+		SubDivision();
+		break;
+	case 19:
+		SaveMesh();
+		cout << "Save Mesh" << endl;
+		break;
+	}
+	
 	glutPostRedisplay();
 }
 
